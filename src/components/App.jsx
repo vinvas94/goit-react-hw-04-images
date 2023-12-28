@@ -1,81 +1,72 @@
-import { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import SearchImages from '../api/SearchImages';
-import { Button } from './Button/Button';
+import Button from './Button/Button';
 import Searchbar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Loader from './Loader/Loader';
 import Modal from './Modal/Modal';
 
-export class App extends Component {
-  state = {
-    photos: [],
-    query: '',
-    page: 1,
-    isVisibleBtn: false,
-    loading: false,
-    showModal: false,
-    selectedImage: null,
-  };
-  getImage = async () => {
-    const { query, page } = this.state;
-    this.setState({ loading: true });
+export const App = () => {
+  const [photos, setPhotos] = useState([]);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [isVisibleBtn, setIsVisibleBtn] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  const getImage = async () => {
+    setLoading(true);
     try {
       const dataImages = await SearchImages(query, page);
 
-      this.setState(prevState => ({
-        photos: [...prevState.photos, ...dataImages.hits],
-        isVisibleBtn: page < Math.ceil(dataImages.totalHits / 12),
-      }));
+      setPhotos(prevPhotos => [...prevPhotos, ...dataImages.hits]);
+      setIsVisibleBtn(page < Math.ceil(dataImages.totalHits / 12));
     } catch (error) {
-      this.setState({ photos: [] });
+      setPhotos([]);
     } finally {
-      this.setState({ loading: false });
+      setLoading(false);
     }
   };
 
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      this.state.page !== prevState.page ||
-      this.state.query !== prevState.query
-    ) {
-      this.getImage();
-    }
-  }
+  useEffect(() => {
+    if (query) getImage();
+  }, [query, page]);
 
-  handleSubmit = query => {
-    this.setState({ query, photos: [], page: 1, isVisibleBtn: false });
+  const handleSubmit = newQuery => {
+    setQuery(newQuery);
+    setPhotos([]);
+    setPage(1);
+    setIsVisibleBtn(false);
   };
-  onBtnLoadMoreClick = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+
+  const onBtnLoadMoreClick = () => {
+    setPage(prevPage => prevPage + 1);
   };
-  toggleModal = selectedImage => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-      selectedImage,
-    }));
+
+  const toggleModal = image => {
+    setShowModal(!showModal);
+    setSelectedImage(image);
   };
-  render() {
-    const { photos, isVisibleBtn, loading, selectedImage, showModal } =
-      this.state;
-    return (
-      <div
-        style={{
-          height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          fontSize: 40,
-          color: '#010101',
-        }}
-      >
-        <Searchbar onSubmit={this.handleSubmit} />
-        <ImageGallery images={photos} onClick={this.toggleModal} />
-        {loading && <Loader />}
-        {isVisibleBtn && <Button onClick={this.onBtnLoadMoreClick} />}
-        {showModal && (
-          <Modal onClose={this.toggleModal} ImageUrl={selectedImage} />
-        )}
-      </div>
-    );
-  }
-}
+
+  return (
+    <div
+      style={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        fontSize: 40,
+        color: '#010101',
+      }}
+    >
+      <Searchbar onSubmit={handleSubmit} />
+      <ImageGallery images={photos} onClick={toggleModal} />
+      {loading && <Loader />}
+      {isVisibleBtn && <Button onClick={onBtnLoadMoreClick} />}
+      {showModal && <Modal onClose={toggleModal} ImageUrl={selectedImage} />}
+    </div>
+  );
+};
+
+export default App;

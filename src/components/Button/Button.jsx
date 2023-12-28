@@ -7,3 +7,5 @@ export const Button = ({ onClick }) => {
     </LoadButton>
   );
 };
+
+export default Button;
