@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import SearchImages from '../api/SearchImages';
 import Button from './Button/Button';
 import Searchbar from './Searchbar/Searchbar';
@@ -15,23 +15,23 @@ export const App = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  const getImage = async () => {
+  const getImage = useCallback(async () => {
     setLoading(true);
     try {
       const dataImages = await SearchImages(query, page);
-
       setPhotos(prevPhotos => [...prevPhotos, ...dataImages.hits]);
       setIsVisibleBtn(page < Math.ceil(dataImages.totalHits / 12));
     } catch (error) {
+      console.error('Error fetching images:', error);
       setPhotos([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [query, page]);
 
   useEffect(() => {
     if (query) getImage();
-  }, [query, page]);
+  }, [query, page, getImage]);
 
   const handleSubmit = newQuery => {
     setQuery(newQuery);
